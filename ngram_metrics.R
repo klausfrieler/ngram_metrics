@@ -79,10 +79,10 @@ option_list = list(
               help="(Language) format for output files [default= %default]", metavar="character")
 )
 
-#opt_parser = OptionParser(option_list=option_list);
-#opt = parse_args(opt_parser);
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
 
-#if(is.null(opt$test_set)){
-#  stop("You have to provide a directory for the test set.")
-#}
-#do_all(test_set = opt$test_set, max_n =  opt$max_n, outdir = opt$outdir, file_format = opt$file_format)
+if(is.null(opt$test_set)){
+  stop("You have to provide a directory for the test set.")
+}
+do_all(test_set = opt$test_set, max_n =  opt$max_n, outdir = opt$outdir, file_format = opt$file_format)
