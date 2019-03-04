@@ -3,7 +3,10 @@ Evaluation scripts for automated melody extractions from the Weimar Jazz Databas
 
 ## Usage
 
-Clone the repository and put your extracted note tracks in a directory of your choice (we recommend `data/test_set`. You can start the evaluation script on the commandline with 
+Clone the repository and put your extracted note tracks in a directory of your choice (we recommend `data/test_set`). 
+You need to have the `tidyverse` and `optparse`package installed to run the script. 
+
+You can start the evaluation script on the commandline with 
 
 ``` console
 Rscript ngram_metrics.R -t [TEST_SET_DIRECTORY] -o [OUTPUT_DIR] -m [MAX_N] -f [FILE_FORMAT = en, de]
