@@ -1,6 +1,6 @@
 source("./ngram_evaluation.R")
+source("./similarity.R")
 suppressPackageStartupMessages(suppressWarnings(library(optparse)))
-
 
 write_stats <- function(stats_df, outdir = ".", name, file_format = "en"){
   sep <- ","
@@ -66,23 +66,9 @@ do_all <- function(test_set_dir, max_n = 10, outdir = ".", file_format = "en", r
   print(ngrs %>% select(vars) %>% arrange(n, desc(prec_mean)))
   vars <- c("thresh", "n", sort(names(ngrs)[grep("^rec", names(ngrs))]))
   print(ngrs %>% select(vars) %>% arrange(n, desc(rec_mean)))
+  pat_sim_eval <- cv_pattern_sim(num_folds = 10, size = 10)
+  write_stats(pat_sim_eval[[1]], outdir = outdir, name = "pat_sim_eval_raw.csv", file_format = file_format )
+  write_stats(pat_sim_eval[[2]], outdir = outdir, name = "pat_sim_eval_sum.csv", file_format = file_format )
+  print(pat_sim_eval[[2]])
   #q
 }
-option_list = list(
-  make_option(c("-t", "--test_set"), type = "character", default = NULL,
-              help="test set directory ", metavar = "character"),
-  make_option(c("-o", "--outdir"), type = "character", default = "output",
-              help="output directory name [default= %default]", metavar="character"),
-  make_option(c("-m", "--max_n"), type = "integer", default = 10,
-              help="max. N-gram length [default= %default]", metavar = "character"),
-  make_option(c("-f", "--file_format"), type = "character", default = "en",
-              help="(Language) format for output files [default= %default]", metavar="character")
-)
-
-opt_parser = OptionParser(option_list=option_list);
-opt = parse_args(opt_parser);
-
-if(is.null(opt$test_set)){
-  stop("You have to provide a directory for the test set.")
-}
-do_all(test_set = opt$test_set, max_n =  opt$max_n, outdir = opt$outdir, file_format = opt$file_format)

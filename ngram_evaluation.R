@@ -1,4 +1,5 @@
 suppressPackageStartupMessages(suppressWarnings(library(tidyverse)))
+source("similarity.R")
 
 printf <- function(...) print(sprintf(...))
 messagef <- function(...) message(sprintf(...))
@@ -259,4 +260,80 @@ pitch_match_plot <- function(ngram_match, solo = common[1], threshold = .05, dir
   q <- q + theme_bw()
   q <- q + labs(x = "Onset", y= "Pitch")
   q
+}
+pattern_sim_cmp <- function(subset = common, N_range = 1:10, summary = T){
+  sim_db <-
+    pattern_sim(db_ngrams %>% filter(solo %in% subset),
+                "solo",
+                val1 = unique(subset),
+                N_range = N_range) %>%
+    rename(common_db = common)
+
+  sim_wjd <-
+    pattern_sim(wjd_ngrams %>% filter(solo %in% subset),
+                "solo",
+                val1 = unique(subset),
+                N_range = N_range) %>%
+    rename(common_wjd = common)
+  sim_cmp <-
+    sim_wjd %>%
+    left_join(sim_db, by = c("N", "id1", "id2")) %>%
+    mutate(d_sim = common_wjd - common_db,
+           d_sim_rel = (common_wjd - common_db)/common_wjd
+           ) %>%
+    filter(id1 != id2)
+  #print(summary(sim_cmp$d_sim_rel))
+  #return(sim_cmp)
+
+  ret <-
+    sim_cmp %>%
+    filter(id1 != id2)
+
+  if(summary){
+    q <-
+      sim_cmp %>%
+      ggplot(aes(x = d_sim, y = ..count.. ))
+    q <- q + geom_histogram() + facet_wrap(~N, scale = "free")
+    r <- sim_cmp %>%
+      #filter(common_wjd > 1e-3) %>%
+      ggplot(aes(x = common_wjd, y = d_sim, colour = factor(N)))
+    r <- r  + geom_point()
+    r <- r + geom_smooth(method = "lm", formula = "y~poly(x,1)")
+
+    #print(r)
+    ret <-
+      ret %>%
+      group_by(N) %>%
+      summarise(cor = cor(common_wjd, common_db),
+                mean_common_wjd = mean(common_wjd),
+                mean_d = mean(d_sim),
+                sd_d = sd(d_sim),
+                min_d = min(d_sim),
+                max_d = max(d_sim))
+
+  }
+  ret
+}
+cv_pattern_sim <- function(num_folds = 10, size = 10){
+  ret <- list()
+  ret <- map(1:num_folds,  function(i) {
+    messagef("Calculating pattern similarity batch #%d", i)
+    subset <- sample(common, size =  size)
+    tmp <- pattern_sim_cmp(subset, summary = F)
+    tmp$batch <- i
+    tmp
+  })
+  ret <-
+    bind_rows(ret)
+  ret_sum <-
+    ret %>%
+    group_by(N) %>%
+    summarise(cor = cor(common_wjd, common_db),
+              mean_common_wjd = mean(common_wjd),
+              mean_d = mean(d_sim),
+              rel_mean_d = mean_d /mean_common_wjd,
+              sd_d = sd(d_sim),
+              min_d = min(d_sim),
+              max_d = max(d_sim))
+  list(raw = ret, summary = ret_sum)
 }
