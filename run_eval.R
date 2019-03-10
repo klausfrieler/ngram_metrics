@@ -1,5 +1,4 @@
 source("ngram_metrics.R")
-source("similarity.R")
 
 option_list = list(
   make_option(c("-t", "--test_set"), type = "character", default = NULL,

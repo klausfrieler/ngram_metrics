@@ -66,6 +66,7 @@ do_all <- function(test_set_dir, max_n = 10, outdir = ".", file_format = "en", r
   print(ngrs %>% select(vars) %>% arrange(n, desc(prec_mean)))
   vars <- c("thresh", "n", sort(names(ngrs)[grep("^rec", names(ngrs))]))
   print(ngrs %>% select(vars) %>% arrange(n, desc(rec_mean)))
+  #pattern similarity
   pat_sim_eval <- cv_pattern_sim(num_folds = 10, size = 10)
   write_stats(pat_sim_eval[[1]], outdir = outdir, name = "pat_sim_eval_raw.csv", file_format = file_format )
   write_stats(pat_sim_eval[[2]], outdir = outdir, name = "pat_sim_eval_sum.csv", file_format = file_format )

@@ -261,6 +261,38 @@ pitch_match_plot <- function(ngram_match, solo = common[1], threshold = .05, dir
   q <- q + labs(x = "Onset", y= "Pitch")
   q
 }
+pitch_to_interval <- function(x){
+    map_chr(strsplit(x, ","), function(y) y %>% as.integer() %>% diff() %>% paste(collapse=","))
+}
+pitch_ngrams_to_int <- function(data){
+  data %>%
+  filter(n > 1) %>%
+  mutate(value  = pitch_to_interval(data$value)) %>%
+  mutate(n  = n - 1)
+}
+global_pattern_sim_cmp <- function(data1, data2, N_range = 1:10, sim_measure = "total_variation"){
+    sim_measure <- match.arg(sim_measure, c("total_variation", "mi", "jsd", "jaccard"))
+    N_range <- setdiff(1:max(data1$n), N_range)
+    N_range <- setdiff(1:max(data2$n), N_range)
+    ret <- list()
+    for(N in N_range){
+      printf("Checking %d", N)
+      set1 <- data1[data1$n == N,]$value
+      set2 <- data2[data2$n == N,]$value
+      sim_val <- distribution_similarity(set1, set2, type = sim_measure)
+      ret[[as.character(N)]] <- tibble(N = N,
+                                       wjd_ngrams = n_distinct(set1),
+                                       db_ngrams = n_distinct(set2),
+                                       common = length(intersect(set1, set2)),
+                                       total = length(union(set1, set2)),
+                                       in_wjd_not_db = length(setdiff(set1, set2)),
+                                       in_db_not_wjd = length(setdiff(set2, set1)),
+                                       jaccard_sim =  jaccard_sim(set1, set2),
+                                       sim_val = sim_val)
+  }
+  bind_rows(ret)
+}
+
 pattern_sim_cmp <- function(subset = common, N_range = 1:10, summary = T){
   sim_db <-
     pattern_sim(db_ngrams %>% filter(solo %in% subset),
@@ -323,8 +355,7 @@ cv_pattern_sim <- function(num_folds = 10, size = 10){
     tmp$batch <- i
     tmp
   })
-  ret <-
-    bind_rows(ret)
+  ret <- bind_rows(ret)
   ret_sum <-
     ret %>%
     group_by(N) %>%
