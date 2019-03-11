@@ -15,8 +15,9 @@ The script execute two kinds of evaluation. The first by matching notes and calc
 
 Results will be written to `OUTPUT_DIR` (default: 'output'), using n-grams up to length `MAX_N` (default: 10). Results are four CSV files, using the language convention as specificed in `FILE_FORMAT` (default is en), and a boxplot of F1 scores across n-gram lengths and a set fo thresholds (currently 30, 50 and 70 ms, see below). Be patient, grab a coffee or have a smoke, as the script is rather slow.
 
-##Output 
-###Retrieval Metrics
+## Output 
+### Retrieval Metrics
+
 The script creates three CSV files based on a direct note-by-note matching procedure, which results are regarded as a classical retrieval problem. Note tracks are represented as `(onset, pitch)` pairs. For each note in the ground truth note track ('target')  all note events within a certain time window `T` of the  target onset are retrieved from the extracted note track ('query'). There can be zero, one or more  notes in this result set. Next, the pitches in the result set are compared  with the target pitch. All note events with the same pitch are  counted as  true positives (`TP`), note events with a different pitch are thus false positives (`FP`), and a empty result set is regarded as a false negative (`FN`). This procedure is repeated for each target event in each solo in the test set over a range of thresholds `T`, currently 30, 50, and 70 ms, and a range of n-gram length, as defined by the `MAX_N` parameter. The matching algorithm for n-grams of length `N` is similar to the one for note events (unigrams), i.e., n-grams in the target are matched with n-grams of the same length in the query, whereby the onset of an n-gram is defined here as the mean of onsets of all elements in a query n-gram.    
 
 The first result file `ngram_stats_raw.csv` contains lists of the raw result. An example looks like this
@@ -49,7 +50,7 @@ Here, the first three columns have again the same meaning as in the two other fi
 
 The fourth result file is a boxplot of F1 scores as the main metric, with n-gram lengths on the x-axis and three boxes for the different thresholds each.
 
-###Pattern Similarity Metrics
+### Pattern Similarity Metrics
 
 An alternative n-gram metric is based on the idea of measuring the capability of the automatically extracted note track to reproduce some important pattern metrics, specifically, **pattern commonalities** (or n-gram similarities). The pattern commonality of two subsets of solos (note tracks) is defined as the total statistical variation of n-gram distributions over a range of n-grams. Total statistical variation is simply the L1 norm of two probability distributions. Fixing an n-gram length `N`, and two set of note tracks `S1` and `S2` to be compared, we calculate the n-gram probability distribution over the **common** set of n-grams in `S1` and `S2` for each note track. Averaging the absolute difference in (estimated) probabilities between the two sets is a measure of pattern commonality. 
 
