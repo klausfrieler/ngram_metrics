@@ -170,10 +170,12 @@ get_ngram_analysis <- function(recalc = F, max_n = 10, thresholds = seq(.03, .07
   }
   bind_rows(cmp)
 }
-get_dtw_distance <- function(solo){
+get_dtw_distance <- function(solo, N = 1){
+  library(dtw)
+
   solo <- enquo(solo)
-  query <- db_ngrams %>% filter(n == 1, solo == !!solo) %>% pull(value) %>% as.integer()
-  target <- wjd_ngrams %>% filter(n == 1, solo == !!solo) %>% pull(value) %>% as.integer()
+  query <- db_ngrams %>% filter(n == N, solo == !!solo) %>% pull(value) %>% as.integer()
+  target <- wjd_ngrams %>% filter(n == N, solo == !!solo) %>% pull(value) %>% as.integer()
   alignment <- dtw(query, target, keep.internals = F, distance.only = T)
   alignment$normalizedDistance
 }

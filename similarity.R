@@ -91,7 +91,13 @@ mutual_pattern_share <- function(data, melid1, melid2, N_range ){
   }
   bind_rows(ret)
 }
-pattern_sim <- function(data, group_var, val1, val2 = NULL, N_range, sim_measure = "total_variation", only_independent = T){
+pattern_sim <- function(data,
+                        group_var,
+                        val1,
+                        val2 = NULL,
+                        N_range,
+                        sim_measure = "total_variation",
+                        only_independent = T){
   sim_measure <- match.arg(sim_measure, c("total_variation", "mi", "jsd", "jaccard"))
   add_diagonal <- F
   if(is.null(val2)){
@@ -117,7 +123,7 @@ pattern_sim <- function(data, group_var, val1, val2 = NULL, N_range, sim_measure
       set1 <- tmp[tmp[, group_var] == x[[1]][1],]$value
       set2 <- tmp[tmp[, group_var] == x[[2]][1],]$value
       #printf("Length: %d %d", length(set1), length(set2))
-      distribution_similarity(set1, set2, type="total_variation")
+      distribution_similarity(set1, set2, type = "total_variation")
     }
     sim_val <- map_dbl(cross_indices, sim_func)
     #printf("Sin vaL. %f", sim_val)
