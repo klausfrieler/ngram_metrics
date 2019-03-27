@@ -9,7 +9,7 @@ option_list = list(
               help="max. N-gram length [default= %default]", metavar = "character"),
   make_option(c("-f", "--file_format"), type = "character", default = "en",
               help="(Language) format for output files [default= %default]", metavar="character"),
-  make_option(c("-w", "--windows"), type = "character", default = ".03;.05;.07",
+  make_option(c("-w", "--windows"), type = "character", default = ".05",
               help="w1;w2;w3;... of windows sizes [im sec]  [default= %default]", metavar="character")
 )
 
