@@ -1,4 +1,5 @@
 suppressPackageStartupMessages(suppressWarnings(library(tidyverse)))
+suppressPackageStartupMessages(suppressWarnings(library(tictoc)))
 source("similarity.R")
 
 printf <- function(...) print(sprintf(...))
@@ -38,6 +39,22 @@ setup_workspace <- function(test_set_dir = "data/note_basis/test_set_v2"){
   assign("common", intersect(names(mcsv2), names(note_basis)), globalenv())
 }
 
+test_get_ngram <- function(x, n){
+  ret <- as.character(x)
+  for(i in 1:(n-1)){
+    ret <- cbind(ret, lead(x, i))
+  }
+  ret
+}
+test_get_ngram2 <- function(x, n){
+  x
+  map_dfc(0:n, function(i) lead(x, i))
+}
+
+test_row_access <-function(ret){
+  nrow <- nrow(ret)
+  x <- sample(1:nrow, 1)
+  if(!any(is.na(ret[x, ])))paste(ret[x,], collapse=",")}
 
 get_ngram <- function(x, n, id = "NA"){
   ret <- as.character(x)
@@ -48,10 +65,15 @@ get_ngram <- function(x, n, id = "NA"){
     ret <- tibble(id = id, pos = 1:length(ret), n = n, value = ret)
     return(ret)
   }
+  #tic()
   for(i in 1:(n-1)){
-    ret <- cbind(ret, lead(x, i))
+      ret <- cbind(ret, lead(x, i))
   }
-  ret <- map_chr(1:(nrow(ret)-n), function(x) if(!any(is.na(ret[x, ])))paste(ret[x,], collapse=","))
+  #toc()
+  #tic()
+  #ret <- map(0:(n-1), function(i) lead(x, i)) %>% bind_cols()
+  #toc()
+  ret <- map_chr(1:(nrow(ret) - n + 1), function(x) if(!any(is.na(ret[x, ])))paste(ret[x,], collapse=","))
   ret <- tibble(id = id, pos = 1:length(ret), n = n, value = ret)
   return(ret)
   #ret <- as.tibble(ret)
@@ -62,12 +84,30 @@ get_ngram <- function(x, n, id = "NA"){
 get_all_ngrams <- function(x, max_n, id = "NA"){
   map_df(1:max_n, function(n) get_ngram(x, n, id))
 }
+get_all_ngrams2 <- function(x, max_n, id = "NA"){
+  ret <- NULL
+  base <- NULL
+  for(i in 0:(max_n-1)){
+    base <- cbind(base, lead(x, i))
+  }
+  l <- nrow(base)
+  map_dfr(1:max_n, function(n){
+        pos <- 1:(l - n + 1)
+        tmp <- apply(as.matrix(base[pos, 1:n]), 1, function(row) paste(row, collapse = ","))
+        #printf("n = %d, max pos: %d, len(tmp) = %d, class(tmp) = %s", n, l - n + 1, length(tmp), class(tmp))
+        tibble(id = id, pos = pos, n = n, value = tmp)
+  })
+}
 prepare_ngram_analysis <- function(note_list, max_n = 10, subset = NULL, global_name = NULL, mean_onset = F){
   if(!is.null(subset)){
     note_list <- note_list[subset]
   }
   n <- length(note_list)
+  tic()
+  tic()
   tmp <- map_df(1:n, function(i) get_all_ngrams(note_list[[i]]$pitch, max_n, id = names(note_list)[i]))
+  toc()
+  tic()
   if(mean_onset){
     tmp$onset <- map_dbl(1:nrow(tmp), function(i){
       row <- tmp[i,]
@@ -77,22 +117,34 @@ prepare_ngram_analysis <- function(note_list, max_n = 10, subset = NULL, global_
     tmp$onset <- map_dbl(1:nrow(tmp), function(i) note_list[[tmp[i,]$id]]$onset[tmp[i,]$pos])
 
   }
+  toc()
   tmp$solo <- tmp$id
   tmp$id  <- sprintf("%d-%d-%d", as.integer(factor(tmp$solo)), tmp$n, tmp$pos)
+  tic()
   if(!is.null(global_name) && nchar(global_name)> 0){
     tmp$source <- global_name
     assign(x = global_name, value = tmp, globalenv())
   }
+  toc()
+  toc()
   tmp
 }
 prepare_ngrams <- function(max_n = 10){
   common <- intersect(names(mcsv2), names(note_basis))
-  prepare_ngram_analysis(mcsv2, max_n, subset = common, global_name = "wjd_ngrams", mean_onset = T)
+  load("data/wjd_ngrams_all.rda")
+  wjd_ngrams <- wjd_ngrams_all %>% filter(solo %in% common, n <= max_n)
+  if(nrow(wjd_ngrams) > 0 ){
+    assign("wjd_ngrams", wjd_ngrams, globalenv())
+    messagef("Loaded %d WJD ngrams", nrow(wjd_ngrams))
+  }
+  else {
+    prepare_ngram_analysis(mcsv2, max_n, subset = common, global_name = "wjd_ngrams", mean_onset = T)
+  }
   prepare_ngram_analysis(note_basis, max_n, subset = common, global_name = "db_ngrams", mean_onset = T)
   messagef("Created %d WJD ngrams and %d ME ngrams", nrow(wjd_ngrams), nrow(db_ngrams))
 }
 
-find_in_range <- function(x, y, threshold = .01, as_value = F){
+find_in_range <- function(x, y, threshold = .05, as_value = F){
   if(length(y) > 1){
     stop()
   }
@@ -107,10 +159,10 @@ find_in_range <- function(x, y, threshold = .01, as_value = F){
   pos
 }
 
-find_closest_elements <- function(source, target, threshold = .01){
+find_closest_elements <- function(source, target, threshold = .05){
   r <- 1:length(target$onset)
   #r <- 1:10
-  ret <- map_df(r, function(x) {
+  ret <- map_dfr(r, function(x) {
     pos <- find_in_range(source$onset, target$onset[x], threshold = threshold, as_value = F);
     if(length(pos) == 0 || all(is.na(pos))){
       #return(NULL)
@@ -138,7 +190,11 @@ find_closest_elements <- function(source, target, threshold = .01){
   ret
 }
 
-get_ngram_analysis <- function(recalc = F, max_n = 10, thresholds = seq(.03, .07, .02), subset = NULL, add_inverse = F){
+get_ngram_analysis <- function(recalc = F,
+                               max_n = 10,
+                               thresholds = seq(.03, .07, .02),
+                               subset = NULL,
+                               add_inverse = F){
   common <- intersect(names(mcsv2), names(note_basis))
   if(recalc){
     prepare_ngrams(max_n = max_n)
@@ -146,20 +202,27 @@ get_ngram_analysis <- function(recalc = F, max_n = 10, thresholds = seq(.03, .07
   if(!is.null(subset)){
     common <- intersect(common, subset)
   }
+  library(furrr)
+  #plan(multiprocess)
+
   cmp <- list()
   for(n in 1:max_n){
+    db_tmp <- db_ngrams[db_ngrams$n == n, ]
+    wjd_tmp <- wjd_ngrams[wjd_ngrams$n == n,]
     for (t in thresholds){
-      tmp <- map_df(1:length(common), function(x){
-        find_closest_elements(source = db_ngrams[db_ngrams$solo == common[x] & db_ngrams$n == n, ],
-                              target = wjd_ngrams[wjd_ngrams$solo == common[x] & wjd_ngrams$n == n, ],
-                              threshold = t)})
+      tic()
+      tmp <- future_map_dfr(1:length(common), function(x){
+        find_closest_elements(source = db_tmp[db_tmp$solo == common[x],],
+                              target = wjd_tmp[wjd_tmp$solo == common[x], ],
+                              threshold = t)}, .progress = T)
+      toc()
       tmp$threshold <- t
       tmp$direction <- "target"
       cmp[[sprintf("target_%s_%d", as.character(t), n)]] <- tmp
       if(add_inverse){
         tmp <- map_df(1:length(common), function(x){
-          find_closest_elements(source = wjd_ngrams[wjd_ngrams$solo == common[x] & wjd_ngrams$n == n, ],
-                                target = db_ngrams[db_ngrams$solo == common[x] & db_ngrams$n == n, ],
+          find_closest_elements(source = wjd_tmp[wjd_tmp$solo == common[x], ],
+                                target = db_tmp[db_tmp$solo == common[x], ],
                                 threshold = t)})
         tmp$threshold <- t
         tmp$direction <- "source"
@@ -357,16 +420,36 @@ cv_pattern_sim <- function(num_folds = 10, size = 10){
     tmp$batch <- i
     tmp
   })
-  ret <- bind_rows(ret)
+  ret <- bind_rows(ret) %>% filter(N <= 6)
+
   ret_sum <-
     ret %>%
+    filter(N <= 6) %>%
     group_by(N) %>%
+    mutate(z_common_wjd = scale(common_wjd), z_common_db = scale(common_db), d_z = z_common_wjd - z_common_db) %>%
     summarise(cor = cor(common_wjd, common_db),
               mean_common_wjd = mean(common_wjd),
               mean_d = mean(d_sim),
               rel_mean_d = mean_d /mean_common_wjd,
               sd_d = sd(d_sim),
               min_d = min(d_sim),
-              max_d = max(d_sim))
+              max_d = max(d_sim),
+              mean_abs_dz = mean(abs(d_z)),
+              sd_abs_dz = sd(abs(d_z))) %>%
+    ungroup()
+  print(mean(ret_sum$sd_abs_dz))
+  ret_pooled <-
+    ret_sum  %>%
+    summarise(mdz = mean(mean_abs_dz), sdz = mean(sd_abs_dz))
+  ret_sum <- bind_rows(ret_sum, tibble(N = -1,
+                                   cor = NA,
+                                   mean_common_wjd = NA,
+                                   mean_d = NA,
+                                   rel_mean_d = NA,
+                                   sd_d = NA,
+                                   min_d = NA,
+                                   max_d = NA,
+                                   mean_abs_dz = ret_pooled$mdz,
+                                   sd_abs_dz = ret_pooled$sdz))
   list(raw = ret, summary = ret_sum)
 }

@@ -36,7 +36,7 @@ distribution_similarity <- function(x, y, type = "total_variation"){
     return(0)
   }
   joint <- c(x, y) %>% table()
-  tx <- factor(x, levels= names(joint)) %>% table()
+  tx <- factor(x, levels = names(joint)) %>% table()
   ty <- factor(y, levels = names(joint)) %>% table()
   if(type %in% c("mi", "jsd")){
     #avoid zero counts

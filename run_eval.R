@@ -18,4 +18,6 @@ if(is.null(opt$test_set)){
   stop("You have to provide a directory for the test set.")
 }
 set.seed(666)
+tic()
 do_all(test_set = opt$test_set, max_n =  opt$max_n, outdir = opt$outdir, file_format = opt$file_format)
+toc()
