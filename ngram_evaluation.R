@@ -203,7 +203,7 @@ get_ngram_analysis <- function(recalc = F,
     common <- intersect(common, subset)
   }
   library(furrr)
-  #plan(multiprocess)
+  plan(multiprocess)
 
   cmp <- list()
   for(n in 1:max_n){
@@ -450,6 +450,7 @@ cv_pattern_sim <- function(num_folds = 10, size = 10){
                                    min_d = NA,
                                    max_d = NA,
                                    mean_abs_dz = ret_pooled$mdz,
-                                   sd_abs_dz = ret_pooled$sdz))
+                                   sd_abs_dz = ret_pooled$sdz)) %>%
+    select(N, cor, mean_abs_dz, mean_d, rel_mean_d, mean_common_wjd, sd_d:max_d)
   list(raw = ret, summary = ret_sum)
 }
