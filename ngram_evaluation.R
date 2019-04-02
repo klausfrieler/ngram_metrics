@@ -31,7 +31,7 @@ setup_workspace <- function(test_set_dir = "data/note_basis/test_set_v2"){
   assign("note_basis", note_basis, envir = globalenv())
   messagef("Read %d extracted melodies", length(note_basis))
 
-  wjd <- read.csv("data/WJD_metadata.csv", header=T, sep=";", stringsAsFactors = F) %>% as_tibble()
+  wjd <- read.csv("data/WJD_metadata.csv", header = T, sep = ";", stringsAsFactors = F) %>% as_tibble()
   wjd$id2 <- gsub("\\.sv", "\\.csv", wjd$id)
   wjd <- wjd[, c("avgtempo", "instrument", "performer", "recordingyear", "rhythmfeel", "style", "tempoclass", "tonality_type", "id2")]
   wjd$instrument_red <- fct_collapse(wjd$instrument, sax = c("ss", "as", "ts", "ts-c", "bs", "cl", "bcl"), brass = c("tp", "tb", "cor"), g = "g", vib = "vib", p = "p")
