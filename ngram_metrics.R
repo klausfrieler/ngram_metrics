@@ -1,23 +1,7 @@
 source("./ngram_evaluation.R")
 source("./similarity.R")
-suppressPackageStartupMessages(suppressWarnings(library(optparse)))
+source("./utils.R")
 
-write_stats <- function(stats_df, outdir = ".", name, file_format = "en"){
-  sep <- ","
-  dec <- "."
-  if(file_format == "de"){
-    sep <- ";"
-    dec <- ","
-  }
-  write.table(stats_df,
-              file.path(outdir, name),
-              sep = sep,
-              dec = dec,
-              row.names = F,
-              col.names = T,
-              quote = F)
-
-}
 library(tictoc)
 do_all <- function(test_set_dir, max_n = 10, outdir = ".", file_format = "en", recalc = T, thresholds = seq(0.03, 0.07, 0.02)){
   #tic()
@@ -64,28 +48,30 @@ do_all <- function(test_set_dir, max_n = 10, outdir = ".", file_format = "en", r
 
   #tic()
   messagef("Producing figures...")
-  def_colour <- "#1f77b4"
+  #def_colour <- "#1f77b4"
+  def_colour <- "black"
+
   q <- ngram_stats[[2]] %>% ggplot(aes(x = factor(target_n), y = F1, fill = factor(threshold)))
   q <- q + geom_boxplot(fill = def_colour) + geom_point(alpha = .1, color = "black") + geom_violin(alpha = .1, fill = def_colour)
   #q <- q + facet_wrap(~threshold, ncol = 1)
   q <- q + theme_bw() + labs(x = "N")
   q <- q + ggtitle("F1 Score")
 
-  ggsave(file.path(outdir, "ngram_stats_solo_F1.png"), width = 9.03, heigh = 5.73, units = "in")
+  ggsave(file.path(outdir, "ngram_stats_solo_F1.pdf"), width = 9.03, heigh = 5.73, units = "in")
   messagef("F1...done.")
   q <- ngram_stats[[2]] %>% ggplot(aes(x = factor(target_n), y = prec, fill = factor(threshold)))
   q <- q + geom_boxplot(fill = def_colour) + geom_point(alpha = .1) + geom_violin(alpha = .1, fill = def_colour)
   #q <- q + facet_wrap(~threshold, ncol = 1)
   q <- q + theme_bw() + labs(x = "N")
   q <- q + ggtitle("Precision")
-  ggsave(file.path(outdir, "ngram_stats_solo_prec.png"), width = 9.03, heigh = 5.73, units = "in")
+  ggsave(file.path(outdir, "ngram_stats_solo_prec.pdf"), width = 9.03, heigh = 5.73, units = "in")
   messagef("Precision...done.")
   q <- ngram_stats[[2]] %>% ggplot(aes(x = factor(target_n), y = rec, fill = factor(threshold)))
   q <- q + geom_boxplot(fill = def_colour) + geom_point(alpha = .1) + geom_violin(alpha = .1, fill = def_colour)
   #q <- q + facet_wrap(~threshold, ncol = 1)
   q <- q + theme_bw() + labs(x = "N")
   q <- q + ggtitle("Recall")
-  ggsave(file.path(outdir, "ngram_stats_solo_rec.png"), width = 9.03, heigh = 5.73, units = "in")
+  ggsave(file.path(outdir, "ngram_stats_solo_rec.pdf"), width = 9.03, heigh = 5.73, units = "in")
   messagef("Recall...done.")
   #toc()
 

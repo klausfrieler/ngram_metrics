@@ -1,17 +1,14 @@
 suppressPackageStartupMessages(suppressWarnings(library(optparse)))
-source("ngram_metrics.R")
+library(tictoc)
+source("retrieval_evaluation.R")
 
 option_list = list(
   make_option(c("-t", "--test_set"), type = "character", default = NULL,
               help="test set directory ", metavar = "character"),
   make_option(c("-o", "--outdir"), type = "character", default = "output",
               help="output directory name [default= %default]", metavar="character"),
-  make_option(c("-m", "--max_n"), type = "integer", default = 10,
-              help="max. N-gram length [default= %default]", metavar = "character"),
   make_option(c("-f", "--file_format"), type = "character", default = "en",
-              help="(Language) format for output files [default= %default]", metavar="character"),
-  make_option(c("-w", "--windows"), type = "character", default = ".05",
-              help="w1;w2;w3;... of windows sizes [im sec]  [default= %default]", metavar="character")
+              help="(Language) format for output files [default= %default]", metavar="character")
 )
 
 opt_parser = OptionParser(option_list=option_list);
@@ -22,7 +19,6 @@ if(is.null(opt$test_set)){
 }
 set.seed(666)
 tic()
-thresholds <- as.double(strsplit(opt$windows, ";")[[1]])
 
-do_all(test_set = opt$test_set, max_n =  opt$max_n, outdir = opt$outdir, file_format = opt$file_format, thresholds = thresholds)
+query_evaluation(test_set = opt$test_set, outdir = opt$outdir, file_format = opt$file_format)
 toc()
