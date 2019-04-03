@@ -162,7 +162,9 @@ find_in_range <- function(x, y, threshold = .05, as_value = F){
 find_closest_elements <- function(source, target, threshold = .05){
   r <- 1:length(target$onset)
   #r <- 1:10
+  #printf("Calling find_closest_elements with len source %d target %d", nrow(source), nrow(target))
   ret <- map_dfr(r, function(x) {
+    #printf("testing %d", r)
     pos <- find_in_range(source$onset, target$onset[x], threshold = threshold, as_value = F);
     if(length(pos) == 0 || all(is.na(pos))){
       #return(NULL)
@@ -209,6 +211,10 @@ get_ngram_analysis <- function(recalc = F,
   for(n in 1:max_n){
     db_tmp <- db_ngrams[db_ngrams$n == n, ]
     wjd_tmp <- wjd_ngrams[wjd_ngrams$n == n,]
+    if(nrow(db_tmp) == 0){
+      printf("Data does not contain ngrams of length %d", n)
+      break
+    }
     for (t in thresholds){
       tic()
       tmp <- future_map_dfr(1:length(common), function(x){
@@ -219,7 +225,7 @@ get_ngram_analysis <- function(recalc = F,
       tmp$threshold <- t
       tmp$direction <- "target"
       cmp[[sprintf("target_%s_%d", as.character(t), n)]] <- tmp
-      if(add_inverse){
+      if(add_inverse || n == 1){
         tmp <- map_df(1:length(common), function(x){
           find_closest_elements(source = wjd_tmp[wjd_tmp$solo == common[x], ],
                                 target = db_tmp[db_tmp$solo == common[x], ],
@@ -269,15 +275,29 @@ get_ngram_stats_retrieval <- function(ngram_match){
     summarise(TP = sum(equal),
               FP = sum(!equal & !is.na(source_pos)),
               FN = sum(is.na(source_pos)))
+  assign("ngram_raw", ngram_raw, globalenv())
+  extra_FP <-
+    ngram_raw %>%
+    filter(direction == "source", target_n == 1) %>%
+    group_by(threshold, target_solo) %>%
+    summarise(FP = sum(FN))
+  assign("extra_FP", extra_FP, globalenv())
+  ngram_raw <- ngram_raw %>% filter(direction == "target")
   ngram_sum <- ngram_raw %>%
     group_by(threshold, direction, target_n, target_solo) %>%
     summarise(TP = sum(TP == 1),
               FP = sum(FP > 0),
-              FN = sum(FN),
-              prec = TP/(TP + FP),
-              rec = TP/(TP+ FN),
-              F1 = 2*TP/(2*TP + FP + FN)) %>%
-    select(-TP, -FP, -FN)
+              FN = sum(FN))
+  assign("ngram_sum", ngram_sum, globalenv())
+  #ngram_sum[ngram_sum$]
+  ngram_sum[ngram_sum$target_n == 1,]$FP <- ngram_sum[ngram_sum$target_n == 1,]$FP + extra_FP[["FP"]]
+  ngram_sum <-  ngram_sum %>%
+    group_by(threshold, direction, target_n, target_solo) %>%
+    summarise(
+      prec = TP/(TP + FP),
+      rec = TP/(TP + FN),
+      F1 = 2*TP/(2*TP + FP + FN))
+  assign("ngram_sum2", ngram_sum, globalenv())
   ngram_total <- ngram_sum %>%
     group_by(threshold, direction, target_n) %>%
     select(-target_solo) %>%
