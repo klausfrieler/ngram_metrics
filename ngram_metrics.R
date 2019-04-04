@@ -49,7 +49,7 @@ do_all <- function(test_set_dir, max_n = 10, outdir = ".", file_format = "en", r
   #tic()
   messagef("Producing figures...")
   #def_colour <- "#1f77b4"
-  def_colour <- "black"
+  def_colour <- "gray64"
 
   q <- ngram_stats[[2]] %>% ggplot(aes(x = factor(target_n), y = F1, fill = factor(threshold)))
   q <- q + geom_boxplot(fill = def_colour) + geom_point(alpha = .1, color = "black") + geom_violin(alpha = .1, fill = def_colour)
