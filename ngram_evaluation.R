@@ -271,15 +271,15 @@ get_ngram_stats <- function(ngram_match){
 
 get_ngram_stats_retrieval <- function(ngram_match){
   ngram_raw <- ngram_match %>%
-    group_by(threshold, direction, target_solo, target_n, target_pos) %>%
+    group_by(threshold, direction, target_n, target_solo, target_pos) %>%
     summarise(TP = sum(equal),
               FP = sum(!equal & !is.na(source_pos)),
               FN = sum(is.na(source_pos)))
   assign("ngram_raw", ngram_raw, globalenv())
   extra_FP <-
     ngram_raw %>%
-    filter(direction == "source", target_n == 1) %>%
-    group_by(threshold, target_solo) %>%
+    filter(direction == "source") %>%
+    group_by(threshold, target_n, target_solo) %>%
     summarise(FP = sum(FN))
   assign("extra_FP", extra_FP, globalenv())
   ngram_raw <- ngram_raw %>% filter(direction == "target")
@@ -290,7 +290,8 @@ get_ngram_stats_retrieval <- function(ngram_match){
               FN = sum(FN))
   assign("ngram_sum", ngram_sum, globalenv())
   #ngram_sum[ngram_sum$]
-  ngram_sum[ngram_sum$target_n == 1,]$FP <- ngram_sum[ngram_sum$target_n == 1,]$FP + extra_FP[["FP"]]
+  #ngram_sum[ngram_sum$target_n == 1,]$FP <- ngram_sum[ngram_sum$target_n == 1,]$FP + extra_FP[["FP"]]
+  ngram_sum$FP <- ngram_sum$FP + extra_FP[["FP"]]
   ngram_sum <-  ngram_sum %>%
     group_by(threshold, direction, target_n, target_solo) %>%
     summarise(

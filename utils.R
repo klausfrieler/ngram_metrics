@@ -19,3 +19,9 @@ write_stats <- function(stats_df, outdir = ".", name, file_format = "en", RDS_co
 
 }
 theta <- function(x){ ifelse( x > 0, 1, 0)}
+
+multi_ggsave <- function(outdir, fname, formats = c("png", "pdf"), width  = 9.03, height = 5.73){
+  map(formats, function(x){
+    ggsave(file.path(outdir, sprintf("%s.%s", fname, x)), width = width, heigh = height, units = "in")
+  }) %>% invisible()
+}
