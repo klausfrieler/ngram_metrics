@@ -1,4 +1,4 @@
-library(tidyverse)
+suppressPackageStartupMessages(library(tidyverse))
 source("./utils.R")
 
 write_stats <- function(stats_df, outdir = ".", name, file_format = "en"){
@@ -23,30 +23,36 @@ len_pat <- Vectorize (
   }, SIMPLIFY = T, USE.NAMES = F)
 
 read_evaluations <- function(fname_db ="output_test/eval_v0a_db.csv", fname_wjd = "output_test/eval_v0a_wjd.csv"){
-  ev_db <- read.csv(fname_db, sep=";", stringsAsFactors = F)
+  ev_db <- read.csv(fname_db, sep = ";", stringsAsFactors = F)
   names(ev_db) <- c("value", "len", "min_sim", "max_diff", "n_db", "melid")
-  ev_db <-
-    ev_db %>%
-    distinct(value, min_sim, max_diff, len, n_db, melid, .keep_all = T)
+  #ev_db <-
+  #  ev_db %>%
+  #  distinct(value, min_sim, max_diff, len, n_db, melid, .keep_all = T)
 
-  ev_wjd <- read.csv(fname_wjd, sep=";", stringsAsFactors = F)
+  ev_wjd <- read.csv(fname_wjd, sep = ";", stringsAsFactors = F)
   names(ev_wjd) <- c("value", "len", "min_sim", "max_diff", "n_wjd", "melid")
-  ev_wjd <-
-    ev_wjd %>%
-    distinct(value, min_sim, max_diff, len, melid, n_wjd, .keep_all = T)
+  #browser()
+  #ev_wjd <-
+  #  ev_wjd %>%
+  #  distinct(value, min_sim, max_diff, len, melid, n_wjd, .keep_all = T)
 
   exact_db <-
     ev_db %>%
     filter(min_sim == 1 & max_diff == 0) %>%
     select(-min_sim, -max_diff) %>%
+    #group_by(value, len) %>%
+    #summarize(n_db = sum(n_db)) %>%
+    #ungroup %>%
     as_tibble()
 
   exact_wjd <-
     ev_wjd %>%
     filter(min_sim == 1 & max_diff == 0) %>%
     select(-min_sim, -max_diff) %>%
+    #group_by(value, len) %>%
+    #summarize(n_db = sum(n_wjd)) %>%
+    ungroup %>%
     as_tibble()
-
   ev_wjd <-
     ev_wjd %>%
     filter(min_sim != 1) %>%
@@ -59,7 +65,7 @@ read_evaluations <- function(fname_db ="output_test/eval_v0a_db.csv", fname_wjd 
   ev_db <-
     ev_db %>%
     filter(min_sim != 1) %>%
-    distinct(value, min_sim, max_diff, len, melid, .keep_all = T) %>%
+    #distinct(value, min_sim, max_diff, len, melid, .keep_all = T) %>%
     group_by(value, min_sim, max_diff, len) %>%
     summarize(n_db = sum(n_db, na.rm = T)) %>%
     ungroup() %>%
@@ -78,7 +84,7 @@ read_evaluations <- function(fname_db ="output_test/eval_v0a_db.csv", fname_wjd 
     exact_wjd %>%
     left_join(exact_db, by = c("value", "len", "melid")) %>%
     mutate(n_db = replace(n_db, is.na(n_db), 0)) %>%
-    distinct(value, len, .keep_all = T) %>%
+    distinct(value, len, melid, .keep_all = T) %>%
     mutate(n_diff = n_db - n_wjd,
            rel_diff = (n_db - n_wjd)/n_wjd,
            abs_rel_diff = abs(rel_diff))
@@ -110,6 +116,7 @@ query_evaluation <- function(test_set_dir, outdir = test_set_dir, file_format = 
   fname_db <- file.path(test_set_dir, "retrieval_eval_db.csv")
   fname_wjd <- file.path(test_set_dir, "retrieval_eval_wjd.csv")
   ev <- read_evaluations(fname_db = fname_db, fname_wjd = fname_wjd)
+  #browser()
   assign("ev", ev, globalenv())
   retrieval_eval <-
     get_retrieval_scores(ev$exact) %>%
